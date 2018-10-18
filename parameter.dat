@@ -1,0 +1,32 @@
+//ana_dark parameters
+range_thre		500	0	2000
+range_threfit		20
+range_threlow		250	0	1000
+range_threlowfit	20
+range_window		250 	-300	1199
+range_windowfit		40
+range_hybrid		250	-300	1199
+range_hybridfit		40
+range_rise		10	0	100
+range_baselinesigma	100	0	5
+
+//Histogram (ana_integ)
+range_baseline		0	800
+range_integral  	1000	1400
+range_integralhist	7500	-200	224800
+
+//Fit parameters
+op_peak_search_range	20
+op_peak_search_start	15
+op_peak_width		10
+op_peak_fit_num		3
+
+//xtalk parameter
+range_integral_xtalk	300	-500	3000
+zero_line		200
+ROISAMPLE		150
+range_fit_zero		-160	-10
+fit_zero_init		1000	-80	100
+range_fit_one		480	640
+fit_one_init		400	540	80
+
