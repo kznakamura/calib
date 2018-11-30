@@ -10,7 +10,7 @@
 using namespace std;
 
 const int T_NSAMPLE=2048;
-const int T_NREADCH=6;
+const int T_NREADCH=2;
 const int T_NEVENT=1000;
 
 
@@ -103,21 +103,31 @@ int main(int argc, char* argv[]){
 	  t_fadc[ch][i] = t_wave[cy]->GetLeaf(Form("ch%d",ch))->GetValue(i);
 	}
       }
+      
       //Baseline determination method
       for(int ch=0 ; ch<T_NREADCH ; ch++){ //loop of all ch
 	b_ch=ch;
 	baseline=t_fadc[ch][range_baseline_min];
 	integral=0;
+	//TH1D *h_baseline = new TH1D("h_baseline","h_baseline",2000,-2000,0);
 	for(int i=range_baseline_min ; i<range_baseline_max; i++){
 	  baseline=(baseline*(i-range_baseline_min)+t_fadc[ch][i])/(i-range_baseline_min+1);
+	  //h_baseline -> Fill(t_fadc[ch][i]);
 	}
+	/*	int max_bin = h_baseline -> GetMaximumBin();
+	int hist_peak = -2000 + 2000*max_bin/2000;
+	TF1 *f_baseline = new TF1("f_baseline","gaus",-2000,0);
+	h_baseline -> Fit("f_baseline","Q","",hist_peak-4,hist_peak+4);
+	baseline = f_baseline -> GetParameter(1);
+	*/
 	for(int i=range_integral_min; i<range_integral_max; i++){
 	  integral+=baseline-t_fadc[ch][i];
 	  integral_wave[i-range_integral_min]=baseline-t_fadc[ch][i];
 	}
 	h_integral[ch] -> Fill(integral);
 	tree_integentry -> Fill();
-	
+	//delete h_baseline;
+	//delete f_baseline;
       } //loop of all ch
     } //loop of all event
    

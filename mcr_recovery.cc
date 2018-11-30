@@ -21,7 +21,7 @@ void swap(float& time1, float& timeerr1, float& time2, float& timeerr2, float& a
 void mcr_recovery(string target, string setup, string darkdate){
 
 
-  const int T_NREADCH = 6;
+  const int T_NREADCH = 2;
   const int MPPC_AMP = 5;
   const float CELL_PITCH = 50; //um unit
   const float LED_WIDTH = 1000; //ns unit
@@ -32,12 +32,12 @@ void mcr_recovery(string target, string setup, string darkdate){
   const TString BREAKDOWN_FILE=target+"_breakdown.dat";
   const int RECFITRANGE_MIN = 0;
   //const int READCYCLE = 0; //0: default comment out 20180301~ 
-  const int CYCLE = 20;
-  const float GERROR_MIN = 0.98, GERROR_MAX = 1.02;
-  const string SAVEFILE = "all"; //save: org,two,modiv,twomodiv,all / NOTsave: else
-  const bool PDFSAVE = 1; //0: not save pdf, 1: save canvas pdf
-  const bool DRAW_CANVAS = 1; //0: not draw each canvas, 1: draw each canvas
-  const string ANADATE = "_ana181010";
+  const int CYCLE = 25;
+  const float GERROR_MIN = 0.90, GERROR_MAX = 1.02;
+  const string SAVEFILE = "else"; //save: org,two,modiv,twomodiv,all / NOTsave: else
+  const bool PDFSAVE = 0; //0: not save pdf, 1: save canvas pdf
+  const bool DRAW_CANVAS = 0; //0: not draw each canvas, 1: draw each canvas
+  const string ANADATE = "_ana181019";
   
   TString SETUP_PATH="/home/kznakamura/DAQ/setup/"+SETUP_FILE;  
   TString BREAKDOWN_PATH="/home/kznakamura/DAQ/setup/"+BREAKDOWN_FILE;  
@@ -154,7 +154,7 @@ void mcr_recovery(string target, string setup, string darkdate){
 
   TGraphErrors *g1[T_NREADCH], *g2[T_NREADCH], *g_recovery1[T_NREADCH], *g_recovery2[T_NREADCH], *g_recovery3[T_NREADCH], *g_recovery4[T_NREADCH];
   TGraph *g_error1[T_NREADCH], *g_error2[T_NREADCH], *g_error3[T_NREADCH], *g_error4[T_NREADCH];
-  TF1 *f_smallfit[T_NREADCH], *f_recoveryfit1[T_NREADCH], *f_recoveryfit2[T_NREADCH], *f_recoveryfit3[T_NREADCH], *f_recoveryfit4[T_NREADCH];
+  TF1 *f_smallfit[T_NREADCH], *f_recoveryfit_linear[T_NREADCH], *f_recoveryfit1[T_NREADCH], *f_recoveryfit2[T_NREADCH], *f_recoveryfit3[T_NREADCH], *f_recoveryfit4[T_NREADCH];
   float smallfit_slp[T_NREADCH], smallfit_cpt[T_NREADCH];
   float eff_gain[T_NREADCH]={};
   float ntrue[T_NREADCH][CYCLE]={}, nobs[T_NREADCH][CYCLE]={};
@@ -291,8 +291,14 @@ void mcr_recovery(string target, string setup, string darkdate){
     g_recovery4[ch] = new TGraphErrors(CYCLE,ntrue[ch],nobs[ch],ntrue_error[ch],nobs_error[ch]);
     //g_recovery1[ch] -> SetMarkerStyle(20);
     //    g_recovery1[ch] ->Fit("pol1","","",0,1000);
+    f_recoveryfit_linear[ch] = new TF1(Form("f_recoveryfit_linear_%d",ch),"[0]*x", 0, 30000);
+    f_recoveryfit_linear[ch] -> SetParameter(0,1);
+    f_recoveryfit_linear[ch] -> SetLineStyle(2);
+    f_recoveryfit_linear[ch] -> SetLineColor(1);
+    g_recovery1[ch] -> Fit(Form("f_recoveryfit_linear_%d",ch),"QW","",RECFITRANGE_MIN,ntrue[ch][SMALL_NUM-1]+50);
     f_recoveryfit1[ch] = new TF1(Form("f_recoveryfit1_%d",ch),"x/(1+[0]*x)", 0, 30000);
     f_recoveryfit1[ch] -> SetParameter(0,120/cell_pixel/LED_WIDTH);
+    f_recoveryfit1[ch] -> SetLineColor(2);
     g_recovery1[ch] -> Fit(Form("f_recoveryfit1_%d",ch),"QW","",RECFITRANGE_MIN,ntrue[ch][CYCLE-1]);
     recovery1_time[ch] = (f_recoveryfit1[ch] -> GetParameter(0))*cell_pixel*LED_WIDTH;
     recovery1_timeerr[ch] = (f_recoveryfit1[ch] -> GetParError(0))*cell_pixel*LED_WIDTH;
@@ -301,12 +307,13 @@ void mcr_recovery(string target, string setup, string darkdate){
 
 
     f_recoveryfit2[ch] = new TF1(Form("f_recoveryfit2_%d",ch),"[2]*x/(1+[0]*x)+[3]*x/(1+[1]*x)", 0, 30000);
-    //f_recoveryfit2[ch] = new TF1(Form("f_recoveryfit2_%d",ch),"[2]*x/(1+[0]*x)+(1-[2])*x/(1+[1]*x)", 0, 30000);
+    //    f_recoveryfit2[ch] = new TF1(Form("f_recoveryfit2_%d",ch),"[2]*x/(1+[0]*x)+(1-[2])*x/(1+[1]*x)", 0, 30000);
     f_recoveryfit2[ch] -> SetParameters(50/cell_pixel/LED_WIDTH,100/cell_pixel/LED_WIDTH,0.5,0.5);
     //f_recoveryfit2[ch] -> SetParameters(50/cell_pixel/LED_WIDTH,100/cell_pixel/LED_WIDTH,0.5);
     f_recoveryfit2[ch] -> SetParLimits(0,0,10000/cell_pixel/LED_WIDTH);
     f_recoveryfit2[ch] -> SetParLimits(1,0,10000/cell_pixel/LED_WIDTH);
     f_recoveryfit2[ch] -> SetParLimits(2,0,1);
+    f_recoveryfit2[ch] -> SetLineColor(3);
     g_recovery2[ch] -> Fit(Form("f_recoveryfit2_%d",ch),"QW","",RECFITRANGE_MIN,ntrue[ch][CYCLE-1]);
     recovery2_time1[ch] = (f_recoveryfit2[ch] -> GetParameter(0))*cell_pixel*LED_WIDTH;
     recovery2_timeerr1[ch] = (f_recoveryfit2[ch] -> GetParError(0))*cell_pixel*LED_WIDTH;
@@ -527,14 +534,16 @@ void mcr_recovery(string target, string setup, string darkdate){
       //Cnavas
   TCanvas *c1[T_NREADCH], *c2[T_NREADCH];
   TLine *l[T_NREADCH];
-
+  TLegend *leg[T_NREADCH];
+ 
   for(int ch=1; ch<T_NREADCH; ch++){
     c1[ch] = new TCanvas(Form("c1_ch%d", ch),Form("c1_ch%d",ch),200*(ch-1),0,800,400);
     c1[ch]->Divide(2,1,0.01,0.01);
-    c1[ch]->cd(1);  
+    c1[ch]->cd(1);
     g1[ch] ->SetMarkerStyle(20);
     g1[ch]->SetTitle(Form("small fit (serial:%d);PMT ADC count;MPPC ADC count",serial_num[ch]));
     g1[ch] -> SetMinimum(0);
+    g1[ch] -> GetXaxis() -> SetLimits(0,integral_mean[0][SMALL_NUM-1]+50);
     g1[ch]->GetYaxis()->SetTitleOffset(1.5);
     g1[ch] -> Draw("ap");
     if(SMALL_EVAL==1){
@@ -542,12 +551,22 @@ void mcr_recovery(string target, string setup, string darkdate){
     }
 
     c1[ch] -> cd(2);
+    leg[ch]= new TLegend(0.2,0.7,0.4,0.85);
+    leg[ch] -> AddEntry(f_recoveryfit_linear[ch],"linear","l");
+    leg[ch] -> AddEntry(f_recoveryfit1[ch],"1par","l");
+    leg[ch] -> AddEntry(f_recoveryfit2[ch],"2par","l");
+  
     g2[ch] ->SetMarkerStyle(20);
     g2[ch]->SetTitle(Form("small recovery original (serial:%d);Nref (#mus^{-1});Nobs (#mus^{-1})",serial_num[ch]));
     g2[ch] -> SetMinimum(0);
+    g2[ch] -> SetMaximum(nobs[ch][SMALL_NUM-1]+50);
+    g2[ch] -> GetXaxis() -> SetLimits(0,ntrue[ch][SMALL_NUM-1]+50);
     g2[ch]->GetYaxis()->SetTitleOffset(1.2);
     g2[ch] -> Draw("ap");
+    f_recoveryfit_linear[ch] -> Draw("same");
     f_recoveryfit1[ch] -> Draw("same");
+    f_recoveryfit2[ch] -> Draw("same");
+    leg[ch] -> Draw();
 
     
     c2[ch] = new TCanvas(Form("c2_ch%d", ch), Form("c2_ch%d",ch),200*(ch-1),200,1600,600);
