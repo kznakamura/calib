@@ -13,12 +13,12 @@ using namespace std;
 const double THRESHOLD_FACTOR=5.0;
 const double THRESHOLD=10.0; //mV unit
 const int T_NSAMPLE=2048;
-const int T_NREADCH=6;
+const int T_NREADCH=2;
 const int T_NEVENT=5000;
 const float AMP=100.;
 const int CLOCK_WIDTH=50;
 const int WIN_NUM=10;
-const double WIN_WIDTH=1.2; //us units
+const double WIN_WIDTH=0.5; //us units
 const bool SKIP_EVENT=0; 
   
 
