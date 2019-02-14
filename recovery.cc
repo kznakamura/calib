@@ -389,9 +389,8 @@ void Analizer::makeCanvas(){
     tp_anainfo[ch] -> AddText(mem_input_anadark_name.Data());
     tp_anainfo[ch] -> AddText(mem_input_integ_name.Data());
     tp_anainfo[ch] -> Draw();
-    canvas[ch] -> cd(5);
-    g_photon[ch] -> Draw("ap");
-    g_photon[ch] -> SetTitle("one parameter;Nref (#mu s^{-1});Nobs (#mu s^{-1})");
+    canvas[ch] -> cd(5) -> DrawFrame(0,0,1.1*mem_nref_mean[ch][mem_cycle-1],1.1*mem_nobs_mean[ch][mem_cycle-1],"one parameter;Nref (#mu s^{-1});Nobs (#mu s^{-1})");
+    g_photon[ch] -> Draw("p");
     f_onepar[ch] -> SetLineStyle(7);
     f_onepar[ch] -> SetLineColor(4);
     f_onepar[ch] -> DrawCopy("same");
@@ -410,8 +409,8 @@ void Analizer::makeCanvas(){
     tp_oneparinfo[ch] -> AddText(Form("tau=%.2fns",mem_onepar_tau[ch]));
     tp_oneparinfo[ch] -> AddText(Form("slope=%.3f",mem_onepar_slope[ch]));
     tp_oneparinfo[ch] -> Draw();
-    canvas[ch] -> cd(9);
-    g_photon[ch] -> Draw("ap");
+    canvas[ch] -> cd(9) -> DrawFrame(0,0,1.1*mem_nref_mean[ch][mem_cycle-1],1.1*mem_nobs_mean[ch][mem_cycle-1],"two parameter;Nref (#mu s^{-1});Nobs (#mu s^{-1})");
+    g_photon[ch] -> Draw("p");
     f_twopar[ch] -> SetLineStyle(7);
     f_twopar[ch] -> SetLineColor(4);
     f_twopar[ch] -> DrawCopy("same");
