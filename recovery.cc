@@ -40,7 +40,7 @@ private:
   int mem_cycle = 0;
   double mem_effgain[MAXCH] = {};
   double mem_onepar_tau[MAXCH] = {};
-  //  double mem_onepar_slope[MAXCH] = {};
+  double mem_onepar_slope[MAXCH] = {};
   double mem_twopar_tau1[MAXCH] = {}, mem_twopar_tau2[MAXCH] = {};
   double mem_twopar_alpha[MAXCH] = {}, mem_twopar_beta[MAXCH] = {};
   double mem_integral_mean[MAXCH][MAXCYCLE] = {};
@@ -67,7 +67,7 @@ private:
   TString mem_target;
   TString mem_setup_num;
   string mem_anadark_name;
-  string mem_onepar_func = "x/(1+[0]*x)";
+  string mem_onepar_func = "x*[1]/(1+[0]*x)";
   string mem_twopar_func = "[2]*x/(1+[0]*x)+[3]*x/(1+[1]*x)";
   string mem_anadate;
   
@@ -232,7 +232,7 @@ void Analizer::anaRecovery(){
     g_onepar_resi[ch] = new TGraphErrors(mem_cycle, mem_nref_mean[ch], mem_onepar_residual[ch], mem_nref_err[ch], mem_onepar_residual_err[ch]);
     g_twopar_resi[ch] = new TGraphErrors(mem_cycle, mem_nref_mean[ch], mem_twopar_residual[ch], mem_nref_err[ch], mem_twopar_residual_err[ch]);
     mem_onepar_tau[ch] = (f_onepar[ch]->GetParameter(0))*mem_mppc_pixel*mem_led_width;
-    //    mem_onepar_slope[ch] = f_onepar[ch]->GetParameter(1);
+    mem_onepar_slope[ch] = f_onepar[ch]->GetParameter(1);
     mem_twopar_tau1[ch] = (f_twopar[ch]->GetParameter(0))*mem_mppc_pixel*mem_led_width;
     mem_twopar_tau2[ch] = (f_twopar[ch]->GetParameter(1))*mem_mppc_pixel*mem_led_width;
     mem_twopar_alpha[ch] = f_twopar[ch]->GetParameter(2);
@@ -271,14 +271,14 @@ void Analizer::saveTree(){
   TTree *twopar_tree = new TTree("twopar_tree", "twopar_tree");
   
   int b_ch=0, b_serial=0;
-  double b_effgain=0, b_tau=0,/* b_slope=0,*/ b_tau1=0, b_tau2=0, b_alpha=0, b_beta=0;
+  double b_effgain=0, b_tau=0, b_slope=0, b_tau1=0, b_tau2=0, b_alpha=0, b_beta=0;
   double b_nobs_mean[MAXCYCLE]={}, b_nref_mean[MAXCYCLE]={}, b_nobs_err[MAXCYCLE]={}, b_nref_err[MAXCYCLE]={}, b_onepar_residual[MAXCYCLE]={}, b_twopar_residual[MAXCYCLE]={};
 
   onepar_tree -> Branch("ch", &b_ch);
   onepar_tree -> Branch("serial", &b_serial);
   onepar_tree -> Branch("effgain", &b_effgain);
   onepar_tree -> Branch("tau", &b_tau);
-  // onepar_tree -> Branch("slope", &b_slope);
+  onepar_tree -> Branch("slope", &b_slope);
   onepar_tree -> Branch("cycle", &mem_cycle);
   onepar_tree -> Branch("nobs_mean", b_nobs_mean, "nobs_mean[cycle]/D");
   onepar_tree -> Branch("nref_mean", b_nref_mean, "nref_mean[cycle]/D");
@@ -305,7 +305,7 @@ void Analizer::saveTree(){
     b_serial = mem_serial[ch];
     b_effgain = mem_effgain[ch];
     b_tau = mem_onepar_tau[ch];
-    //    b_slope = mem_onepar_slope[ch];
+    b_slope = mem_onepar_slope[ch];
     b_tau1 = mem_twopar_tau1[ch];
     b_tau2 = mem_twopar_tau2[ch];
     b_alpha = mem_twopar_alpha[ch];
@@ -344,7 +344,8 @@ void Analizer::makeCanvas(){
   TF1 *f_residual_base = new TF1("f_residual_base","1", 0, 1.0e5);
   f_residual_base -> SetLineColor(1);
   f_residual_base -> SetLineStyle(7);
-  TPaveText *tp_anainfo[MAXCH], *tp_mppcinfo[MAXCH], *tp_oneparinfo[MAXCH], *tp_twoparinfo[MAXCH];  
+  TText * tx_linearfit[MAXCH];
+  TPaveText * tp_anainfo[MAXCH], *tp_mppcinfo[MAXCH], *tp_oneparinfo[MAXCH], *tp_twoparinfo[MAXCH];  
   
   for(int ch=1; ch<mem_readch; ch++){
     canvas[ch] = new TCanvas("test","test",50,50,1500,900);
@@ -356,6 +357,9 @@ void Analizer::makeCanvas(){
     canvas[ch] -> cd(2) -> DrawFrame(0,0,1.2*mem_integral_mean[0][mem_linearfit_num-1],1.2*mem_integral_mean[ch][mem_linearfit_num-1],"linear range ADC count;PMT ADC count;MPPC ADC count");
     g_adc[ch] -> Draw("p");
     f_linear[ch] -> Draw("same");
+    tx_linearfit[ch] = new TText(0.25,0.75,Form("y=%.2fx+%.2f",f_linear[ch]->GetParameter(0),f_linear[ch]->GetParameter(1)));
+    tx_linearfit[ch] -> SetNDC(1);
+    tx_linearfit[ch] -> Draw();
     canvas[ch] -> cd(3) -> DrawFrame(0,0.9,mem_integral_mean[0][mem_linearfit_num+1], 1.1, "linear fit residual(small region);PMT ADC count;(MPPC ADC count)/(linear fit)");
     g_linear_residual[ch] -> Draw("p");
     f_residual_base -> Draw("same");
@@ -397,7 +401,7 @@ void Analizer::makeCanvas(){
     tp_oneparinfo[ch] = new TPaveText(0.1,0.1,0.9,0.9);
     tp_oneparinfo[ch] -> AddText("one parameter");
     tp_oneparinfo[ch] -> AddText(Form("tau=%.2fns",mem_onepar_tau[ch]));
-    //    tp_oneparinfo[ch] -> AddText(Form("slope=%.3f",mem_onepar_slope[ch]));
+    tp_oneparinfo[ch] -> AddText(Form("slope=%.3f",mem_onepar_slope[ch]));
     tp_oneparinfo[ch] -> Draw();
     canvas[ch] -> cd(11) -> DrawFrame(0,0,1.1*mem_nref_mean[ch][mem_cycle-1],1.1*mem_nobs_mean[ch][mem_cycle-1],"two parameter;Nref (#mu s^{-1});Nobs (#mu s^{-1})");
     g_photon[ch] -> Draw("p");

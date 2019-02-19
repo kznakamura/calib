@@ -8,6 +8,7 @@
 #include <TSystem.h>
 #include <TApplication.h>
 #include <TLeaf.h>
+#include <TStyle.h>
 
 using namespace std;
 
@@ -53,6 +54,8 @@ Analizer::Analizer(string filename, int max_cycle, const bool is_debug){
   if(m_is_debug){
     cout << "# Message: debug mode" << endl;
   }
+
+  gStyle -> SetOptFit();
 
   TFile* ifile[m_max_cycle];
   TTree* rawwave_tree[m_max_cycle];
@@ -136,6 +139,8 @@ Analizer::Analizer(string filename, int max_cycle, const bool is_debug){
 	}
 	TF1 *f_baseline = new TF1("f_baseline", "gaus", -2250, 0);
         double baseline_peak_bin = -2250.0 + h_baseline->GetBinWidth(0) * h_baseline -> GetMaximumBin();
+	f_baseline -> SetParLimits(1,baseline_peak_bin-5, baseline_peak_bin+5);
+	f_baseline -> SetParameter(2,2);
 	h_baseline -> Fit("f_baseline", "Q", "", baseline_peak_bin-5, baseline_peak_bin+5);
 	m_baseline = f_baseline -> GetParameter(1);
 	m_baseline_sigma = f_baseline -> GetParameter(2);
@@ -150,8 +155,8 @@ Analizer::Analizer(string filename, int max_cycle, const bool is_debug){
 	}
 
 	if(m_is_debug&&ev%100==0){
-	  c_baseline -> cd() -> DrawFrame(m_baseline-20,0,m_baseline+20,600,Form("baseline: ch%d, cycle%d, event%d;ADC count, # of entries",ch,cy,ev));
-	  h_baseline -> Draw("same");
+	  c_baseline -> cd() -> DrawFrame(m_baseline-20,0,m_baseline+20,600,Form("baseline: ch%d, cycle%d, event%d;ADC count; # of entries",ch,cy,ev));
+	  h_baseline -> Draw("sames");
 	  c_baseline -> Modified();
 	  c_baseline -> Update();
 	  c_baseline -> Print("debug_baseline.gif+");
@@ -160,8 +165,11 @@ Analizer::Analizer(string filename, int max_cycle, const bool is_debug){
 	integral_event_tree -> Fill();
 	if(h_integral->Fill(m_integral_event) == -1){
 	  cout << "#Error: h_integral is overflowed or underflowed" << endl;
-	  cout << "ch=" << ch
+	  cout << "cycle=" << cy+1
+	       << ", ch=" << ch
 	       << ", event=" << ev
+	       << ", baseline_peak_bin=" << baseline_peak_bin
+	       << ", baseline=" << m_baseline 
 	       << ", value=" << m_integral_event << endl;
 	  exit(-1);
 	}
@@ -190,13 +198,13 @@ Analizer::Analizer(string filename, int max_cycle, const bool is_debug){
       double dark_fit_sigma = f_dark->GetParameter(2);
       
       if(m_is_debug){
-	c_integral -> cd() -> DrawFrame(-50,0,integral_fit_mean*1.5,h_integral->GetMaximum()*1.3,Form("Integral: ch%d, cycle%d; integral, # of entries",ch,cy));
-	h_integral -> Draw("same");
+	c_integral -> cd() -> DrawFrame(-50,0,integral_peak_bin*2.0,h_integral->GetMaximum()*1.3,Form("Integral: ch%d, cycle%d; integral, # of entries",ch,cy));
+	h_integral -> Draw("sames");
 	c_integral -> Modified();
 	c_integral -> Update();
 	c_integral -> Print("debug_integral.gif+");
-	c_dark -> cd() -> DrawFrame(-50,0,100,400,Form("Dark: ch%d, cycle%d; integral, # of entries",ch,cy));
-	h_dark -> Draw("same");
+	c_dark -> cd() -> DrawFrame(-50,0,100,600,Form("Dark: ch%d, cycle%d; integral, # of entries",ch,cy));
+	h_dark -> Draw("sames");
 	c_dark -> Modified();
 	c_dark -> Update();
 	c_dark -> Print("debug_dark.gif+");
